@@ -52,6 +52,7 @@ class GenerationMode(ExplicitEnum):
     CONTRASTIVE_SEARCH = "contrastive_search"
     GREEDY_SEARCH = "greedy_search"
     SAMPLE = "sample"
+    ARITHMETIC_SAMPLING = "arithmetic_sampling"
     ASSISTED_GENERATION = "assisted_generation"
     # Beam methods
     BEAM_SEARCH = "beam_search"
@@ -112,6 +113,8 @@ class GenerationConfig(PushToHubMixin):
 
         > Parameters that control the generation strategy used
 
+        arithmetic_sampling (`bool`, *optional*, defaults to `False`):
+            Whether or not to use arithmetic sampling.
         do_sample (`bool`, *optional*, defaults to `False`):
             Whether or not to use sampling ; use greedy decoding otherwise.
         num_beams (`int`, *optional*, defaults to 1):
@@ -318,6 +321,7 @@ class GenerationConfig(PushToHubMixin):
         self.stop_strings = kwargs.pop("stop_strings", None)
 
         # Parameters that control the generation strategy used
+        self.arithmetic_sampling = kwargs.pop("arithmetic_sampling", False)
         self.do_sample = kwargs.pop("do_sample", False)
         self.num_beams = kwargs.pop("num_beams", 1)
         self.num_beam_groups = kwargs.pop("num_beam_groups", 1)
@@ -452,7 +456,13 @@ class GenerationConfig(PushToHubMixin):
                 else:
                     generation_mode = GenerationMode.GREEDY_SEARCH
             else:
-                generation_mode = GenerationMode.SAMPLE
+                if (
+                    self.arithmetic_sampling is True
+                    and self.num_return_sequences > 1
+                ):
+                    generation_mode = GenerationMode.ARITHMETIC_SAMPLING
+                else:
+                    generation_mode = GenerationMode.SAMPLE
         else:
             if self.num_beam_groups > 1:
                 generation_mode = GenerationMode.GROUP_BEAM_SEARCH
